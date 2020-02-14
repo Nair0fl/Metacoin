@@ -1,26 +1,29 @@
 pragma solidity >=0.4.25 <0.7.0;
 
+import "./FeesLib.sol";
 import "./ConvertLib.sol";
-
-// This is just a simple example of a coin-like contract.
-// It is not standards compatible and cannot be expected to talk to other
-// coin/token contracts. If you want to create a standards-compliant
-// token, see: https://github.com/ConsenSys/Tokens. Cheers!
 
 contract MetaCoin {
 	mapping (address => uint) balances;
-
+    mapping (address => mapping (address => uint256)) allowed;
+	uint256 public totalSupply;
 	event Transfer(address indexed _from, address indexed _to, uint256 _value);
 
-	constructor() public {
-		balances[msg.sender] = 10000;
+    function approve(address _spender, uint256 _value) public returns (bool success)  {
+		allowed[msg.sender][_spender] = _value;
+        return true;
+	}
+
+    function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
+		return allowed[_owner][_spender];
 	}
 
 	function sendCoin(address receiver, uint amount) public returns(bool sufficient) {
 		if (balances[msg.sender] < amount) return false;
-		balances[msg.sender] -= amount;
-		balances[receiver] += amount;
-		emit Transfer(msg.sender, receiver, amount);
+		//100 pour prendre 1% de la transaction
+		uint fees = FeesLib.convert(amount,100);
+		balances[msg.sender] -= (amount+fees);
+		balances[receiver] = balances[receiver] + (amount-fees);
 		return true;
 	}
 
